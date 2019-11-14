@@ -53,49 +53,6 @@ def temporal_ensembling_gradients(X_train_labeled, y_train_labeled, X_train_unla
     return ensemble_precitions, loss_value, tape.gradient(loss_value, model.variables)
 
 
-def pi_model_loss(X_train_labeled, y_train_labeled, X_train_unlabeled,
-                  pi_model, unsupervised_weight):
-    """ Gets the Loss Value for SSL Pi Model
-    Arguments:
-        X_train_labeled {tensor} -- train images
-        y_train_labeled {tensor} -- train labels
-        X_train_unlabeled {tensor} -- unlabeled train images
-        pi_model {tf.keras.Model} -- model to be trained
-        unsupervised_weight {float} -- weight
-    Returns:
-        {tensor} -- loss value
-    """
-    z_labeled = pi_model(X_train_labeled)
-    z_labeled_i = pi_model(X_train_labeled)
-
-    z_unlabeled = pi_model(X_train_unlabeled)
-    z_unlabeled_i = pi_model(X_train_unlabeled)
-
-    # Loss = supervised loss + unsup loss of labeled sample + unsup loss unlabeled sample
-    return tf.losses.softmax_cross_entropy(
-        y_train_labeled, z_labeled) + unsupervised_weight * (
-            tf.losses.mean_squared_error(z_labeled, z_labeled_i) +
-            tf.losses.mean_squared_error(z_unlabeled, z_unlabeled_i))
-
-
-def pi_model_gradients(X_train_labeled, y_train_labeled, X_train_unlabeled,
-                       pi_model, unsupervised_weight):
-    """ Returns the loss and the gradients for eager Pi Model
-    Arguments:
-        X_train_labeled {tensor} -- train images
-        y_train_labeled {tensor} -- train labels
-        X_train_unlabeled {tensor} -- unlabeled train images
-        pi_model {tf.keras.Model} -- model to be trained
-        unsupervised_weight {float} -- weight
-    Returns:
-        {tensor} -- loss value
-        {tensor} -- gradients for each model variables
-    """
-    with tf.GradientTape() as tape:
-        loss_value = pi_model_loss(X_train_labeled, y_train_labeled, X_train_unlabeled,
-                                   pi_model, unsupervised_weight)
-    return loss_value, tape.gradient(loss_value, pi_model.variables)
-
 
 def ramp_up_function(epoch, epoch_with_max_rampup=80):
     """ Ramps the value of the weight and learning rate according to the epoch
@@ -133,7 +90,7 @@ def ramp_down_function(epoch, num_epochs):
         return 1.0
 
 
-class PiModel(tf.keras.Model):
+class TempEnsemModel(tf.keras.Model):
     """ Class for defining eager compatible tfrecords file
         I did not use tfe.Network since it will be depracated in the
         future by tensorflow.
@@ -146,7 +103,7 @@ class PiModel(tf.keras.Model):
             to be stored)
         """
 
-        super(PiModel, self).__init__()
+        super(TempEnsemModel, self).__init__()
         self._conv1a = weight_norm_layers.Conv2D.Conv2D(filters=128, kernel_size=[3, 3],
                                                         padding="same", activation=tf.keras.layers.LeakyReLU(alpha=0.1),
                                                         kernel_initializer=tf.keras.initializers.he_uniform(),
@@ -229,21 +186,6 @@ class PiModel(tf.keras.Model):
             input), mean=0.0, stddev=std, dtype=tf.float32)
         return input + noise
 
-    def __apply_image_augmentation(self, image):
-        """ Applies random transformation to the image (shift image withina range of 
-            [-2, 2] pixels)
-        Arguments:
-            image {tensor} -- image
-        Returns:
-            {tensor} -- transformed image
-        """
-
-        random_shifts = np.random.randint(-2, 2, (image.numpy().shape[0], 2))
-        random_transformations = tf.contrib.image.translations_to_projective_transforms(
-            random_shifts)
-        image = tf.contrib.image.transform(image, random_transformations, 'NEAREST',
-                                           output_shape=tf.convert_to_tensor(image.numpy().shape[1:3], dtype=np.int32))
-        return image
 
     def call(self, input, training=True):
         """ Function that allows running a tensor through the pi model
