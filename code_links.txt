@@ -1,0 +1,5 @@
+https://github.com/AIRLegend/fakenews/blob/master/notebooks/Train-Colab-Categorical.ipynb
+http://www.davidsbatista.net/blog/2018/03/31/SentenceClassificationConvNets/
+https://ferretj.github.io/ml/2018/01/22/temporal-ensembling.html
+https://github.com/ferretj/temporal-ensembling
+https://github.com/Goldesel23/Temporal-Ensembling-for-Semi-Supervised-Learning/blob/master/pi_model.py
