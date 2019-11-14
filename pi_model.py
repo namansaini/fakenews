@@ -21,8 +21,8 @@ def temporal_ensembling_loss(X_train_labeled, y_train_labeled, X_train_unlabeled
         {tensor} -- loss value
     """
 
-    z_labeled = model(X_train_labeled)
-    z_unlabeled = model(X_train_unlabeled)
+    z_labeled = model(X_train_labeled) #X_train_labled_title,X_train_labeled_text
+    z_unlabeled = model(X_train_unlabeled) #X_train_labled_title,X_train_labeled_text
 
     current_predictions = tf.concat([z_labeled, z_unlabeled], 0)
 
