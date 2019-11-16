@@ -1,8 +1,9 @@
 import numpy as np
+import pandas as pd
 import math
 import pandas as pd
 import tensorflow as tf
-from fake_load import train_data,val_data,labels
+
 
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
@@ -14,13 +15,44 @@ from gensim.utils import simple_preprocess
 from gensim.models.keyedvectors import KeyedVectors
 from tensorflow.keras.layers import Embedding
 
+data=pd.read_csv("fake.csv", usecols=[2,4,5,8,19])
+
+data=data.dropna()
+
+test_data=data.sample(frac=0.3,random_state=20)
+train_data=data.drop(test_data.index)
+
+def encode_label(column):
+    columns = column.unique()
+    dic = {}
+    for i, col in enumerate(columns):
+        dic[col] = i
+    return column.apply(lambda x: dic[x])
+
+
+train_data.author=encode_label(train_data.author)
+
+train_data.site_url=encode_label(train_data.site_url)
+
+labels=encode_label(train_data.type)
+
+
+
+val_data=train_data.sample(frac=0.2,random_state=20)
+train_data=train_data.drop(val_data.index)
+
+unlabel_data = train_data.sample(frac=0.5,random_state=20)
+
+label_data = train_data.drop(unlabel_data.index)
+
+unlabel_data = unlabel_data.drop(columns=[19])
+
 NUM_WORDS=20000
 EMBEDDING_DIM = 300
 tokenizer = Tokenizer(num_words=NUM_WORDS, filters='!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n\'', lower=True)
 
 
 def embedding():
-    tokenizer = Tokenizer(num_words=NUM_WORDS, filters='!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n\'', lower=True)
     tokenizer.fit_on_texts(train_data.text)
     tokenizer.fit_on_texts(val_data.text)
 
@@ -43,7 +75,7 @@ def embedding():
             embedding_matrix[i] = np.random.normal(0, np.sqrt(0.25), EMBEDDING_DIM)
 
     del (word_vectors)
-    return Embedding(vocabulary_size,EMBEDDING_DIM, weights=[embedding_matrix],trainable=True)
+    return vocabulary_size,embedding_matrix
 
     # print('Found %s unique tokens.' % len(word_index))
 
@@ -68,6 +100,13 @@ X_val_title = pad_sequences(sequences_valid_title,maxlen=X_train_title.shape[1])
 y_train = to_categorical(np.asarray(labels[train_data.index]))
 y_val = to_categorical(np.asarray(labels[val_data.index]))
 
+
+sequence_length_title = X_train_title.shape[1]
+sequence_length_text=X_train_text.shape[1]
+
+filter_sizes = [2, 3, 4]
+num_filters = 100
+drop = 0.2
 
 # prepare embedding layer
 
@@ -99,7 +138,37 @@ class TempEnsemModel(tf.keras.Model):
         """
 
         super(TempEnsemModel, self).__init__()
-        self.embedding_layer = embedding()
+        vocabulary_size, embedding_matrix=embedding()
+        self.embedding_layer_title = Embedding(vocabulary_size,EMBEDDING_DIM, weights=[embedding_matrix])
+        self.reshape_title = Reshape((sequence_length_title, EMBEDDING_DIM, 1))
+        self.conv_0_title = Conv2D(num_filters, (filter_sizes[0], EMBEDDING_DIM), activation='relu',
+                              kernel_regularizer=regularizers.l2(0.01))
+        self.conv_1_title = Conv2D(num_filters, (filter_sizes[1], EMBEDDING_DIM), activation='relu',
+                              kernel_regularizer=regularizers.l2(0.01))
+        self.conv_2_title = Conv2D(num_filters, (filter_sizes[2], EMBEDDING_DIM), activation='relu',
+                                   kernel_regularizer=regularizers.l2(0.01))
+        self.maxpool_0_title = MaxPooling2D((sequence_length_title - filter_sizes[0] + 1, 1), strides=(1, 1))
+        self.maxpool_1_title = MaxPooling2D((sequence_length_title - filter_sizes[1] + 1, 1), strides=(1, 1))
+        self.maxpool_2_title = MaxPooling2D((sequence_length_title - filter_sizes[2] + 1, 1), strides=(1, 1))
+        self.dense_title = Dense(50, activation='relu', kernel_regularizer='l2', name='DenseTitle')
+        self.conv_0_text = Conv2D(num_filters, (filter_sizes[0], EMBEDDING_DIM), activation='relu',
+                             kernel_regularizer=regularizers.l2(0.01))
+        self.conv_1_text = Conv2D(num_filters, (filter_sizes[1], EMBEDDING_DIM), activation='relu',
+                             kernel_regularizer=regularizers.l2(0.01))
+        self.conv_2_text = Conv2D(num_filters, (filter_sizes[2], EMBEDDING_DIM), activation='relu',
+                             kernel_regularizer=regularizers.l2(0.01))
+
+        self.maxpool_0_text = MaxPooling2D((sequence_length_text - filter_sizes[0] + 1, 1), strides=(1, 1))
+        self.maxpool_1_text = MaxPooling2D((sequence_length_text - filter_sizes[1] + 1, 1), strides=(1, 1))
+        self.maxpool_2_text = MaxPooling2D((sequence_length_text - filter_sizes[2] + 1, 1), strides=(1, 1))
+        self. dense_text = Dense(100, activation='relu', kernel_regularizer='l2', name='DenseText')
+        self.dense1 = Dense(50, activation='relu')
+        self.dropout1= Dropout(drop)
+        self.dense2 = Dense(50, activation='relu')
+        self.dropout2= Dropout(drop)
+        self.out = Dense(4, activation='softmax')
+
+
         
 
     def __aditive_gaussian_noise(self, input, std):
@@ -127,12 +196,8 @@ class TempEnsemModel(tf.keras.Model):
 
         
             
-        
-        sequence_length_title = X_train_title.shape[1]
-        sequence_length_text=X_train_text.shape[1]
-        filter_sizes = [2,3,4]
-        num_filters = 100
-        drop = 0.2
+
+
         
         
         #title layer
