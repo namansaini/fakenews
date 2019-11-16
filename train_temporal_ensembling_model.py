@@ -9,13 +9,16 @@ import math
 import queue
 
 import numpy as np
-
+import pandas as pd
 import tensorflow as tf
 import tensorflow.contrib.eager as tfe
-
+from main import num_validation_samples,num_labeled_samples,num_train_unlabeled_samples,NUM_TEST_SAMPLES,NUM_TRAIN_SAMPLES
+from main import label_data,val_data,unlabel_data,test_data,labels
 # Enable Eager Execution
 tf.enable_eager_execution()
-
+from tensorflow.keras.preprocessing.text import Tokenizer
+from tensorflow.keras.preprocessing.sequence import pad_sequences
+from tensorflow.keras.utils import to_categorical
 
 
 from main import TempEnsemModel, temporal_ensembling_gradients, ramp_up_function, ramp_down_function
@@ -23,23 +26,17 @@ import main
 
 
 def mains():
-    # Constants variables
-    NUM_TRAIN_SAMPLES = 73257
-    NUM_TEST_SAMPLES = 26032
 
     # Editable variables
-    num_labeled_samples = 3000
-    num_validation_samples = 1000
-    num_train_unlabeled_samples = NUM_TRAIN_SAMPLES - \
-        num_labeled_samples - num_validation_samples
-    batch_size = 150
-    epochs = 300
+
+    batch_size = 100
+    epochs = 30
     max_learning_rate = 0.0002 # 0.001 as recomended in the paper leads to unstable training. 
     initial_beta1 = 0.9
     final_beta1 = 0.5
     alpha = 0.6
-    max_unsupervised_weight = 30 * num_labeled_samples / \
-        (NUM_TRAIN_SAMPLES - num_validation_samples)
+    max_unsupervised_weight = 30 * num_labeled_samples /\
+                               (NUM_TRAIN_SAMPLES - num_validation_samples)
     checkpoint_directory = './checkpoints/TemporalEnsemblingModel'
     tensorboard_logs_directory = './logs/TemporalEnsemblingModel'
 
@@ -47,10 +44,6 @@ def mains():
     learning_rate = tfe.Variable(max_learning_rate)
     beta_1 = tfe.Variable(initial_beta1)
 
-    # Download and Save Dataset in Tfrecords
-    loader = SvnhLoader('./data', NUM_TRAIN_SAMPLES,
-                        num_validation_samples, num_labeled_samples)
-    loader.download_images_and_generate_tf_record()
 
     # You can replace it by the real ratio (preferably with a big batch size : num_labeled_samples / num_train_unlabeled_samples
     # This means that the labeled batch size will be labeled_batch_fraction * batch_size and the unlabeled batch size will be
@@ -58,10 +51,6 @@ def mains():
     labeled_batch_fraction = num_labeled_samples / num_train_unlabeled_samples
     batches_per_epoch = round(
         num_labeled_samples/(batch_size * labeled_batch_fraction))
-
-    # Generate data loaders
-    train_labeled_iterator, train_unlabeled_iterator, validation_iterator, test_iterator = loader.load_dataset(
-        batch_size, epochs+1000, labeled_batch_fraction, 1.0 - labeled_batch_fraction, shuffle=True)
 
     batches_per_epoch_val = int(round(num_validation_samples / batch_size))
 
@@ -93,7 +82,7 @@ def mains():
             unsupervised_weight = 0
         else:
             unsupervised_weight = max_unsupervised_weight * \
-                rampup_value
+                                  rampup_value
 
         learning_rate.assign(rampup_value * rampdown_value * max_learning_rate)
         beta_1.assign(rampdown_value * initial_beta1 +
@@ -106,12 +95,20 @@ def mains():
 
         for batch_nr in range(batches_per_epoch):
 
-            X_labeled_train, y_labeled_train, labeled_indexes = train_labeled_iterator.get_next()
-            X_unlabeled_train, _, unlabeled_indexes = train_unlabeled_iterator.get_next()
+            labeled=label_data.sample(batch_size)
+            X_unlabeled_train=unlabel_data.sample(batch_size)
+
+            X_labeled_train=labeled.drop(columns=[19])
+            labeled_indexes=labeled.index.values
+            y_labeled_train = to_categorical(np.asarray(labels[labeled.index]))
+            unlabeled_indexes=X_unlabeled_train.index.values
+
+            #X_labeled_train, y_labeled_train, labeled_indexes = train_labeled_iterator.get_next()
+            #X_unlabeled_train, _, unlabeled_indexes = train_unlabeled_iterator.get_next()
 
             # We need to correct labeled samples indexes (in Z the first num_labeled_samples samples are for ensemble labeled predictions)
             current_ensemble_indexes = np.concatenate(
-                [labeled_indexes.numpy(), unlabeled_indexes.numpy() + num_labeled_samples])
+                [labeled_indexes, unlabeled_indexes + num_labeled_samples])
             current_ensemble_targets = z[current_ensemble_indexes]
 
             current_outputs, loss_val, grads = temporal_ensembling_gradients(X_labeled_train, y_labeled_train, X_unlabeled_train,
@@ -137,7 +134,10 @@ def mains():
 
             if (batch_nr == batches_per_epoch - 1):
                 for batch_val_nr in range(batches_per_epoch_val):
-                    X_val, y_val, _ = validation_iterator.get_next()
+                    val= val_data.sample(batch_size)
+                    X_val=val.drop(columns=[19])
+                    y_val=to_categorical(np.asarray(labels[val.index]))
+                    #X_val, y_val, _ = validation_iterator.get_next()
                     y_val_predictions = model(X_val, training=False)
 
                     epoch_loss_avg_val(tf.losses.softmax_cross_entropy(
@@ -195,7 +195,10 @@ def mains():
     num_test_batches = math.ceil(NUM_TEST_SAMPLES/batch_size)
     test_accuracy = tfe.metrics.Accuracy()
     for test_batch in range(num_test_batches):
-        X_test, y_test, _ = test_iterator.get_next()
+        test = test_data.sample(batch_size)
+        X_test = test.drop(columns=[19])
+        y_test = to_categorical(np.asarray(labels[test.index]))
+        #X_test, y_test, _ = test_iterator.get_next()
         y_test_predictions = model(X_test, training=False)
         test_accuracy(tf.argmax(y_test_predictions, 1), tf.argmax(y_test, 1))
 

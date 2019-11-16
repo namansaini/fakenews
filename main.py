@@ -21,6 +21,8 @@ data=data.dropna()
 
 test_data=data.sample(frac=0.3,random_state=20)
 train_data=data.drop(test_data.index)
+NUM_TRAIN_SAMPLES = train_data.count()
+NUM_TEST_SAMPLES = test_data.count()
 
 def encode_label(column):
     columns = column.unique()
@@ -47,8 +49,13 @@ label_data = train_data.drop(unlabel_data.index)
 
 unlabel_data = unlabel_data.drop(columns=[19])
 
-NUM_WORDS=20000
+num_labeled_samples =label_data.count()
+num_validation_samples = val_data.count()
+num_train_unlabeled_samples =unlabel_data.count()
+
+
 EMBEDDING_DIM = 300
+NUM_WORDS=20000
 tokenizer = Tokenizer(num_words=NUM_WORDS, filters='!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n\'', lower=True)
 
 
@@ -87,22 +94,23 @@ def embedding():
 #print('Shape of label train and validation tensor:', y_train.shape,y_val.shape)
 
 sequences_train_text = tokenizer.texts_to_sequences(train_data.text)
-sequences_valid_text = tokenizer.texts_to_sequences(val_data.text)
+#sequences_valid_text = tokenizer.texts_to_sequences(val_data.text)
 sequences_train_title = tokenizer.texts_to_sequences(train_data.title)
-sequences_valid_title = tokenizer.texts_to_sequences(val_data.title)
+#sequences_valid_title = tokenizer.texts_to_sequences(val_data.title)
 
 
 X_train_text = pad_sequences(sequences_train_text)
-X_val_text = pad_sequences(sequences_valid_text, maxlen=X_train_text.shape[1])
+#X_val_text = pad_sequences(sequences_valid_text, maxlen=X_train_text.shape[1])
 X_train_title = pad_sequences(sequences_train_title)
-X_val_title = pad_sequences(sequences_valid_title,maxlen=X_train_title.shape[1])
+#X_val_title = pad_sequences(sequences_valid_title,maxlen=X_train_title.shape[1])
 
-y_train = to_categorical(np.asarray(labels[train_data.index]))
-y_val = to_categorical(np.asarray(labels[val_data.index]))
+#y_train = to_categorical(np.asarray(labels[train_data.index]))
+#y_val = to_categorical(np.asarray(labels[val_data.index]))
 
 
 sequence_length_title = X_train_title.shape[1]
 sequence_length_text=X_train_text.shape[1]
+del (X_train_text,X_train_title,sequences_train_text,sequences_train_title)
 
 filter_sizes = [2, 3, 4]
 num_filters = 100
@@ -169,6 +177,7 @@ class TempEnsemModel(tf.keras.Model):
         self.out = Dense(4, activation='softmax')
 
 
+
     def __aditive_gaussian_noise(self, input, std):
         """ Function to add additive zero mean noise as described in the paper
         Arguments:
@@ -194,6 +203,11 @@ class TempEnsemModel(tf.keras.Model):
         
         title = input.title
         text = input.text
+        sequences_train_text = tokenizer.texts_to_sequences(text)
+        sequences_train_title = tokenizer.texts_to_sequences(title)
+
+        title = pad_sequences(sequences_train_text)
+        text = pad_sequences(sequences_train_title)
         
         #title layer
         #inputs_title = Input(shape=(sequence_length_title,))
@@ -209,16 +223,9 @@ class TempEnsemModel(tf.keras.Model):
         maxpool_layer0_title = self.maxpool_0_title(conv_layer0_title)
         maxpool_layer1_title = self.maxpool_1_title(conv_layer1_title)
         maxpool_layer2_title = self.maxpool_2_title(conv_layer2_title)
-        
-       ''' conv_0_title = Conv2D(num_filters, (filter_sizes[0], EMBEDDING_DIM),activation='relu',kernel_regularizer=regularizers.l2(0.01))(reshape_title)
-        conv_1_title = Conv2D(num_filters, (filter_sizes[1], EMBEDDING_DIM),activation='relu',kernel_regularizer=regularizers.l2(0.01))(reshape_title)
-        conv_2_title = Conv2D(num_filters, (filter_sizes[2], EMBEDDING_DIM),activation='relu',kernel_regularizer=regularizers.l2(0.01))(reshape_title)
-        
-        maxpool_0_title = MaxPooling2D((sequence_length_title - filter_sizes[0] + 1, 1), strides=(1,1))(conv_0_title)
-        maxpool_1_title = MaxPooling2D((sequence_length_title - filter_sizes[1] + 1, 1), strides=(1,1))(conv_1_title)
-        maxpool_2_title = MaxPooling2D((sequence_length_title - filter_sizes[2] + 1, 1), strides=(1,1))(conv_2_title) '''
-        
+
         merged_tensor_title = concatenate([maxpool_layer0_title, maxpool_layer1_title, maxpool_layer2_title], axis=1)
+
         flattenTitle = Flatten()(merged_tensor_title)
         reshapeTitle = Reshape((3*num_filters,))(flattenTitle)
         denseTitle = self.dense_title(reshapeTitle,training)
@@ -261,13 +268,21 @@ class TempEnsemModel(tf.keras.Model):
         x = self.dense2(x)
         x = self.dropout2(x)
         return self.out(x)
-      '''  x = Dense(50, activation='relu')(x)
+'''  x = Dense(50, activation='relu')(x)
         x = Dropout(drop)(x)
         x = Dense(50, activation='relu')(x)
         x = Dropout(drop)(x)
         out = Dense(4, activation='softmax')(x)
         return out '''
 
+
+''' conv_0_title = Conv2D(num_filters, (filter_sizes[0], EMBEDDING_DIM),activation='relu',kernel_regularizer=regularizers.l2(0.01))(reshape_title)
+        conv_1_title = Conv2D(num_filters, (filter_sizes[1], EMBEDDING_DIM),activation='relu',kernel_regularizer=regularizers.l2(0.01))(reshape_title)
+        conv_2_title = Conv2D(num_filters, (filter_sizes[2], EMBEDDING_DIM),activation='relu',kernel_regularizer=regularizers.l2(0.01))(reshape_title)
+
+        maxpool_0_title = MaxPooling2D((sequence_length_title - filter_sizes[0] + 1, 1), strides=(1,1))(conv_0_title)
+        maxpool_1_title = MaxPooling2D((sequence_length_title - filter_sizes[1] + 1, 1), strides=(1,1))(conv_1_title)
+        maxpool_2_title = MaxPooling2D((sequence_length_title - filter_sizes[2] + 1, 1), strides=(1,1))(conv_2_title) '''
 
 
 
