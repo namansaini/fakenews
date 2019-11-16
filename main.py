@@ -1,88 +1,76 @@
 import numpy as np
+import math
 import pandas as pd
 import tensorflow as tf
-data=pd.read_csv("fake.csv", usecols=[2,4,5,8,19])
-test_data=data.sample(frac=0.3,random_state=200)
-train_data=data.drop(test_data.index)
-
-train_data=train_data.dropna()
-test_data=test_data.dropna()
-
-authors=train_data.author.unique()
-dic={}
-for i,auth in enumerate(authors):
-    dic[auth]=i
-train_data.author=train_data.author.apply(lambda x:dic[x])
-sites=train_data.site_url.unique()
-dic={}
-for i,site in enumerate(sites):
-    dic[site]=i
-train_data.site_url=train_data.site_url.apply(lambda x:dic[x])
-
-types=train_data.type.unique()
-dic={}
-for i,type in enumerate(types):
-    dic[type]=i
-labels=train_data.type.apply(lambda x:dic[x])
-
-val_data=train_data.sample(frac=0.2,random_state=200)
-train_data=train_data.drop(val_data.index)
+from fake_load import train_data,val_data,labels
 
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.utils import to_categorical
 
-texts=train_data.text
-titles=train_data.title
-
-NUM_WORDS=20000
-tokenizer = Tokenizer(num_words=NUM_WORDS,filters='!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n\'',lower=True)
-tokenizer.fit_on_texts(texts)
-sequences_train_text = tokenizer.texts_to_sequences(texts)
-sequences_valid_text=tokenizer.texts_to_sequences(val_data.text)
-tokenizer.fit_on_texts(titles)
-sequences_train_title = tokenizer.texts_to_sequences(titles)
-sequences_valid_title=tokenizer.texts_to_sequences(val_data.title)
-word_index = tokenizer.word_index
-print('Found %s unique tokens.' % len(word_index))
-
-X_train_text = pad_sequences(sequences_train_text)
-X_val_text = pad_sequences(sequences_valid_text,maxlen=X_train_text.shape[1])
-y_train = to_categorical(np.asarray(labels[train_data.index]))
-y_val = to_categorical(np.asarray(labels[val_data.index]))
-print('Shape of X train and X validation tensor:', X_train_text.shape,X_val_text.shape)
-print('Shape of label train and validation tensor:', y_train.shape,y_val.shape)
-
-
-X_train_title = pad_sequences(sequences_train_title)
-X_val_title = pad_sequences(sequences_valid_title,maxlen=X_train_title.shape[1])
-
-print('Shape of X train and X validation tensor:', X_train_title.shape,X_val_title.shape)
-
 import gensim
 from gensim.models import Word2Vec
 from gensim.utils import simple_preprocess
-
 from gensim.models.keyedvectors import KeyedVectors
-
-word_vectors = KeyedVectors.load_word2vec_format('GoogleNews-vectors-negative300.bin', binary=True)
-
-EMBEDDING_DIM=300
-vocabulary_size=min(len(word_index)+1,NUM_WORDS)
-embedding_matrix = np.zeros((vocabulary_size, EMBEDDING_DIM))
-for word, i in word_index.items():
-    if i>=NUM_WORDS:
-        continue
-    try:
-        embedding_vector = word_vectors[word]
-        embedding_matrix[i] = embedding_vector
-    except KeyError:
-        embedding_matrix[i]=np.random.normal(0,np.sqrt(0.25),EMBEDDING_DIM)
-
-del(word_vectors)
-
 from tensorflow.keras.layers import Embedding
-embedding_layer = Embedding(vocabulary_size,EMBEDDING_DIM, weights=[embedding_matrix],trainable=True)
+
+NUM_WORDS=20000
+EMBEDDING_DIM = 300
+tokenizer = Tokenizer(num_words=NUM_WORDS, filters='!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n\'', lower=True)
+
+
+def embedding():
+    tokenizer = Tokenizer(num_words=NUM_WORDS, filters='!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n\'', lower=True)
+    tokenizer.fit_on_texts(train_data.text)
+    tokenizer.fit_on_texts(val_data.text)
+
+    tokenizer.fit_on_texts(train_data.title)
+    tokenizer.fit_on_texts(val_data.title)
+
+    word_index = tokenizer.word_index
+    word_vectors = KeyedVectors.load_word2vec_format('GoogleNews-vectors-negative300.bin', binary=True)
+
+
+    vocabulary_size = min(len(word_index) + 1, NUM_WORDS)
+    embedding_matrix = np.zeros((vocabulary_size, EMBEDDING_DIM))
+    for word, i in word_index.items():
+        if i >= NUM_WORDS:
+            continue
+        try:
+            embedding_vector = word_vectors[word]
+            embedding_matrix[i] = embedding_vector
+        except KeyError:
+            embedding_matrix[i] = np.random.normal(0, np.sqrt(0.25), EMBEDDING_DIM)
+
+    del (word_vectors)
+    return Embedding(vocabulary_size,EMBEDDING_DIM, weights=[embedding_matrix],trainable=True)
+
+    # print('Found %s unique tokens.' % len(word_index))
+
+
+
+
+
+#print('Shape of X train and X validation tensor:', X_train_text.shape,X_val_text.shape)
+#print('Shape of label train and validation tensor:', y_train.shape,y_val.shape)
+
+sequences_train_text = tokenizer.texts_to_sequences(train_data.text)
+sequences_valid_text = tokenizer.texts_to_sequences(val_data.text)
+sequences_train_title = tokenizer.texts_to_sequences(train_data.title)
+sequences_valid_title = tokenizer.texts_to_sequences(val_data.title)
+
+
+X_train_text = pad_sequences(sequences_train_text)
+X_val_text = pad_sequences(sequences_valid_text, maxlen=X_train_text.shape[1])
+X_train_title = pad_sequences(sequences_train_title)
+X_val_title = pad_sequences(sequences_valid_title,maxlen=X_train_title.shape[1])
+
+y_train = to_categorical(np.asarray(labels[train_data.index]))
+y_val = to_categorical(np.asarray(labels[val_data.index]))
+
+
+# prepare embedding layer
+
 
 from tensorflow.keras.layers import Dense, Input, GlobalMaxPooling1D
 from tensorflow.keras.layers import Conv1D, MaxPooling1D, Embedding
@@ -111,6 +99,7 @@ class TempEnsemModel(tf.keras.Model):
         """
 
         super(TempEnsemModel, self).__init__()
+        self.embedding_layer = embedding()
         
 
     def __aditive_gaussian_noise(self, input, std):
@@ -148,7 +137,7 @@ class TempEnsemModel(tf.keras.Model):
         
         #title layer
         inputs_title = Input(shape=(sequence_length_title,))
-        embedding_title = embedding_layer(inputs_title)
+        embedding_title = self.embedding_layer(inputs_title)
         reshape_title = Reshape((sequence_length_title,EMBEDDING_DIM,1))(embedding_title)
         if training:
             reshape_title = self.__aditive_gaussian_noise(reshape_title, 0.15)
@@ -168,7 +157,7 @@ class TempEnsemModel(tf.keras.Model):
         
         #text layer
         inputs_text = Input(shape=(sequence_length_text,))
-        embedding_text = embedding_layer(inputs_text)
+        embedding_text = self.embedding_layer(inputs_text)
         reshape_text = Reshape((sequence_length_text,EMBEDDING_DIM,1))(embedding_text)
         
         if training:
@@ -286,18 +275,3 @@ def ramp_down_function(epoch, num_epochs):
     else:
         return 1.0
 
-
-# this creates a model that includes
-model = Model(inputs, output)
-
-adam = Adam(lr=1e-3)
-
-model.compile(loss='categorical_crossentropy',
-              optimizer=adam,
-              metrics=['acc'])
-callbacks = [EarlyStopping(monitor='val_loss')]
-model.fit(X_train, y_train, batch_size=1000, epochs=10, verbose=1, validation_data=(X_val, y_val),
-         callbacks=callbacks)  # starts training
-sequences_test=tokenizer.texts_to_sequences(test_data.text)
-X_test = pad_sequences(sequences_test,maxlen=X_train.shape[1])
-y_pred=model.predict(X_test)

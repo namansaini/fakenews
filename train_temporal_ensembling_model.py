@@ -16,13 +16,13 @@ import tensorflow.contrib.eager as tfe
 # Enable Eager Execution
 tf.enable_eager_execution()
 
-from svnh_loader import SvnhLoader
-from tfrecord_loader import TfrecordLoader
-
-from pi_model import PiModel, temporal_ensembling_gradients, ramp_up_function, ramp_down_function
 
 
-def main():
+from main import TempEnsemModel, temporal_ensembling_gradients, ramp_up_function, ramp_down_function
+import main
+
+
+def mains():
     # Constants variables
     NUM_TRAIN_SAMPLES = 73257
     NUM_TEST_SAMPLES = 26032
@@ -65,7 +65,7 @@ def main():
 
     batches_per_epoch_val = int(round(num_validation_samples / batch_size))
 
-    model = PiModel()
+    model = TempEnsemModel()
     # Paper has beta2=0.990 but I experimented decreasing it a little bit (as recomended in the paper) and it led
     # to more stable training
     optimizer = tf.train.AdamOptimizer(
@@ -203,4 +203,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    mains()
