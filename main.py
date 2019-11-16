@@ -169,8 +169,6 @@ class TempEnsemModel(tf.keras.Model):
         self.out = Dense(4, activation='softmax')
 
 
-        
-
     def __aditive_gaussian_noise(self, input, std):
         """ Function to add additive zero mean noise as described in the paper
         Arguments:
@@ -185,71 +183,90 @@ class TempEnsemModel(tf.keras.Model):
         return input + noise
 
 
-    def call(self, X_train_title,X_train_text, training=True):
+    def call(self, input, training=True):
         """ Function that allows running a tensor through the pi model
-        Arguments:
+        Arguments:2
             input {[tensor]} -- batch of images
             training {bool} -- if true applies augmentaton and additive noise
         Returns:
             [tensor] -- predictions
         """
-
         
-            
-
-
-        
+        title = input.title
+        text = input.text
         
         #title layer
-        inputs_title = Input(shape=(sequence_length_title,))
-        embedding_title = self.embedding_layer(inputs_title)
-        reshape_title = Reshape((sequence_length_title,EMBEDDING_DIM,1))(embedding_title)
+        #inputs_title = Input(shape=(sequence_length_title,))
+        h1 = self.embedding_layer(title,training)
+        h1 = self.reshape_title(h1,training)
+        #reshape_title = Reshape((sequence_length_title,EMBEDDING_DIM,1))(embedding_title)
         if training:
-            reshape_title = self.__aditive_gaussian_noise(reshape_title, 0.15)
+            h1 = self.__aditive_gaussian_noise(h1, 0.15)
+        conv_layer0_title = self.conv_0_title(h1,training)
+        conv_layer1_title = self.conv_1_title(h1,training)
+        conv_layer2_title = self.conv_2_title(h1,training)
         
-        conv_0_title = Conv2D(num_filters, (filter_sizes[0], EMBEDDING_DIM),activation='relu',kernel_regularizer=regularizers.l2(0.01))(reshape_title)
+        maxpool_layer0_title = self.maxpool_0_title(conv_layer0_title)
+        maxpool_layer1_title = self.maxpool_1_title(conv_layer1_title)
+        maxpool_layer2_title = self.maxpool_2_title(conv_layer2_title)
+        
+       ''' conv_0_title = Conv2D(num_filters, (filter_sizes[0], EMBEDDING_DIM),activation='relu',kernel_regularizer=regularizers.l2(0.01))(reshape_title)
         conv_1_title = Conv2D(num_filters, (filter_sizes[1], EMBEDDING_DIM),activation='relu',kernel_regularizer=regularizers.l2(0.01))(reshape_title)
         conv_2_title = Conv2D(num_filters, (filter_sizes[2], EMBEDDING_DIM),activation='relu',kernel_regularizer=regularizers.l2(0.01))(reshape_title)
         
         maxpool_0_title = MaxPooling2D((sequence_length_title - filter_sizes[0] + 1, 1), strides=(1,1))(conv_0_title)
         maxpool_1_title = MaxPooling2D((sequence_length_title - filter_sizes[1] + 1, 1), strides=(1,1))(conv_1_title)
-        maxpool_2_title = MaxPooling2D((sequence_length_title - filter_sizes[2] + 1, 1), strides=(1,1))(conv_2_title)
+        maxpool_2_title = MaxPooling2D((sequence_length_title - filter_sizes[2] + 1, 1), strides=(1,1))(conv_2_title) '''
         
-        merged_tensor_title = concatenate([maxpool_0_title, maxpool_1_title, maxpool_2_title], axis=1)
-        flatten = Flatten()(merged_tensor_title)
-        reshape = Reshape((3*num_filters,))(flatten)
-        dense_title = Dense(50, activation='relu', kernel_regularizer='l2', name='DenseTitle')(reshape)
+        merged_tensor_title = concatenate([maxpool_layer0_title, maxpool_layer1_title, maxpool_layer2_title], axis=1)
+        flattenTitle = Flatten()(merged_tensor_title)
+        reshapeTitle = Reshape((3*num_filters,))(flattenTitle)
+        denseTitle = self.dense_title(reshapeTitle,training)
+        #dense_title = Dense(50, activation='relu', kernel_regularizer='l2', name='DenseTitle')(reshape)
         
         #text layer
-        inputs_text = Input(shape=(sequence_length_text,))
-        embedding_text = self.embedding_layer(inputs_text)
-        reshape_text = Reshape((sequence_length_text,EMBEDDING_DIM,1))(embedding_text)
+        #inputs_text = Input(shape=(sequence_length_text,))
+        h2 = self.embedding_layer(text)
+        h2 = self.reshape_title(h2,training)
         
         if training:
-            reshape_text = self.__aditive_gaussian_noise(reshape_text, 0.15)
-            
+            h2 = self.__aditive_gaussian_noise(h2, 0.15)
+        conv_layer0_text = self.conv_0_title(h2,training)
+        conv_layer1_text = self.conv_1_title(h2,training)
+        conv_layer2_text = self.conv_2_title(h2,training)
+        
+        maxpool_layer0_text = self.maxpool_0_title(conv_layer0_text)
+        maxpool_layer1_text = self.maxpool_1_title(conv_layer1_text)
+        maxpool_layer2_text = self.maxpool_2_title(conv_layer2_text)
+        
+        '''
         conv_0_text = Conv2D(num_filters, (filter_sizes[0], EMBEDDING_DIM),activation='relu',kernel_regularizer=regularizers.l2(0.01))(reshape_text)
         conv_1_text = Conv2D(num_filters, (filter_sizes[1], EMBEDDING_DIM),activation='relu',kernel_regularizer=regularizers.l2(0.01))(reshape_text)
         conv_2_text = Conv2D(num_filters, (filter_sizes[2], EMBEDDING_DIM),activation='relu',kernel_regularizer=regularizers.l2(0.01))(reshape_text)
         
         maxpool_0_text = MaxPooling2D((sequence_length_text - filter_sizes[0] + 1, 1), strides=(1,1))(conv_0_text)
         maxpool_1_text = MaxPooling2D((sequence_length_text - filter_sizes[1] + 1, 1), strides=(1,1))(conv_1_text)
-        maxpool_2_text = MaxPooling2D((sequence_length_text - filter_sizes[2] + 1, 1), strides=(1,1))(conv_2_text)
+        maxpool_2_text = MaxPooling2D((sequence_length_text - filter_sizes[2] + 1, 1), strides=(1,1))(conv_2_text) '''
         
-        merged_tensor_text = concatenate([maxpool_0_text, maxpool_1_text, maxpool_2_text], axis=1)
-        flatten = Flatten()(merged_tensor_text)
-        reshape = Reshape((3*num_filters,))(flatten)
-        dense_text = Dense(100, activation='relu', kernel_regularizer='l2', name='DenseText')(reshape)
+        merged_tensor_text = concatenate([maxpool_layer0_text, maxpool_layer1_text, maxpool_layer2_text], axis=1)
+        flattenText = Flatten()(merged_tensor_text)
+        reshapeText = Reshape((3*num_filters,))(flattenText)
+        denseText = self.dense_text(reshapeText)
         
-        x = concatenate([dense_title, dense_text])
+        x = concatenate([denseTitle, denseText])
         
         #Common part
-        x = Dense(50, activation='relu')(x)
+        x = self.dense1(x)
+        x = self.droput1(x)
+        x = self.dense2(x)
+        x = self.dropout2(x)
+        return self.out(x)
+      '''  x = Dense(50, activation='relu')(x)
         x = Dropout(drop)(x)
         x = Dense(50, activation='relu')(x)
         x = Dropout(drop)(x)
         out = Dense(4, activation='softmax')(x)
-        return out
+        return out '''
 
 
 

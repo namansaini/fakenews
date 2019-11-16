@@ -44,6 +44,6 @@ def random_batch(batch_size):
 
     # Use the random index to select random images and labels.
     x_batch = label_data_train[idx, :, :, :]
-    y_batch = label_train[idx, :]
+    y_batch = label_train[idx
+    return x_batch, y_batch, :]
 
-    return x_batch, y_batch
