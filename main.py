@@ -49,6 +49,11 @@ label_data = train_data.drop(unlabel_data.index)
 
 unlabel_data = unlabel_data.drop(columns=['type'])
 
+test_data = test_data.reset_index(drop=True)
+label_data= label_data.reset_index(drop=True)
+unlabel_data = unlabel_data.reset_index(drop=True)
+val_data = val_data.reset_index(drop=True)
+
 num_labeled_samples =label_data.shape[0]
 num_validation_samples = val_data.shape[0]
 num_train_unlabeled_samples =unlabel_data.shape[0]
