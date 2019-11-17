@@ -15,7 +15,7 @@ from gensim.utils import simple_preprocess
 from gensim.models.keyedvectors import KeyedVectors
 from tensorflow.keras.layers import Embedding
 
-data=pd.read_csv("fake.csv", usecols=[2,4,5,8,19])
+data=pd.read_csv("all_data.csv", usecols=['author','main_img_url','site_url','text','title','type'])
 
 data=data.dropna()
 
@@ -47,7 +47,7 @@ unlabel_data = train_data.sample(frac=0.5,random_state=20)
 
 label_data = train_data.drop(unlabel_data.index)
 
-unlabel_data = unlabel_data.drop(columns=[19])
+unlabel_data = unlabel_data.drop(columns=['type'])
 
 num_labeled_samples =label_data.count()
 num_validation_samples = val_data.count()

@@ -2,7 +2,6 @@
 """
 Created on Thu Nov 14 12:07:05 2019
 
-@author: namansaini
 """
 
 import math
@@ -98,7 +97,7 @@ def mains():
             labeled=label_data.sample(batch_size)
             X_unlabeled_train=unlabel_data.sample(batch_size)
 
-            X_labeled_train=labeled.drop(columns=[19])
+            X_labeled_train=labeled.drop(columns=['type'])
             labeled_indexes=labeled.index.values
             y_labeled_train = to_categorical(np.asarray(labels[labeled.index]))
             unlabeled_indexes=X_unlabeled_train.index.values
@@ -135,7 +134,7 @@ def mains():
             if (batch_nr == batches_per_epoch - 1):
                 for batch_val_nr in range(batches_per_epoch_val):
                     val= val_data.sample(batch_size)
-                    X_val=val.drop(columns=[19])
+                    X_val=val.drop(columns=['type'])
                     y_val=to_categorical(np.asarray(labels[val.index]))
                     #X_val, y_val, _ = validation_iterator.get_next()
                     y_val_predictions = model(X_val, training=False)
@@ -196,7 +195,7 @@ def mains():
     test_accuracy = tfe.metrics.Accuracy()
     for test_batch in range(num_test_batches):
         test = test_data.sample(batch_size)
-        X_test = test.drop(columns=[19])
+        X_test = test.drop(columns=['type'])
         y_test = to_categorical(np.asarray(labels[test.index]))
         #X_test, y_test, _ = test_iterator.get_next()
         y_test_predictions = model(X_test, training=False)
