@@ -15,7 +15,7 @@ from gensim.utils import simple_preprocess
 from gensim.models.keyedvectors import KeyedVectors
 from tensorflow.keras.layers import Embedding
 
-data=pd.read_csv("all_data.csv", usecols=['author','main_img_url','site_url','text','title','type'])
+data=pd.read_csv("all_data.csv", usecols=['author','main_img_url','site_url','text','title','type'], nrows = 200)
 
 data=data.dropna()
 

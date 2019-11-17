@@ -10,7 +10,8 @@ import queue
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-import tensorflow.contrib.eager as tfe
+#from tensorflow.python.compiler import eager as tfe
+#import tensorflow.contrib.eager as tfe
 from main import num_validation_samples,num_labeled_samples,num_train_unlabeled_samples,NUM_TEST_SAMPLES,NUM_TRAIN_SAMPLES
 from main import label_data,val_data,unlabel_data,test_data,labels
 # Enable Eager Execution
@@ -40,8 +41,8 @@ def mains():
     tensorboard_logs_directory = './logs/TemporalEnsemblingModel'
 
     # Assign it as tfe.variable since we will change it across epochs
-    learning_rate = tfe.Variable(max_learning_rate)
-    beta_1 = tfe.Variable(initial_beta1)
+    learning_rate = tf.Variable(max_learning_rate)
+    beta_1 = tf.Variable(initial_beta1)
 
 
     # You can replace it by the real ratio (preferably with a big batch size : num_labeled_samples / num_train_unlabeled_samples
@@ -87,10 +88,10 @@ def mains():
         beta_1.assign(rampdown_value * initial_beta1 +
                       (1.0 - rampdown_value) * final_beta1)
 
-        epoch_loss_avg = tfe.metrics.Mean()
-        epoch_accuracy = tfe.metrics.Accuracy()
-        epoch_loss_avg_val = tfe.metrics.Mean()
-        epoch_accuracy_val = tfe.metrics.Accuracy()
+        epoch_loss_avg = tf.metrics.Mean()
+        epoch_accuracy = tf.metrics.Accuracy()
+        epoch_loss_avg_val = tf.metrics.Mean()
+        epoch_accuracy_val = tf.metrics.Accuracy()
 
         for batch_nr in range(batches_per_epoch):
 
@@ -158,7 +159,7 @@ def mains():
         # If the accuracy of validation improves save a checkpoint
         if best_val_accuracy < epoch_accuracy_val.result():
             best_val_accuracy = epoch_accuracy_val.result()
-            checkpoint = tfe.Checkpoint(optimizer=optimizer,
+            checkpoint = tf.Checkpoint(optimizer=optimizer,
                                         model=model,
                                         optimizer_step=global_step)
             checkpoint.save(file_prefix=checkpoint_directory)
@@ -185,14 +186,14 @@ def mains():
     print('\nTrain Ended! Best Validation accuracy = {}\n'.format(best_val_accuracy))
 
     # Load the best model
-    root = tfe.Checkpoint(optimizer=optimizer,
+    root = tf.Checkpoint(optimizer=optimizer,
                           model=model,
                           optimizer_step=tf.train.get_or_create_global_step())
     root.restore(tf.train.latest_checkpoint(checkpoint_directory))
 
     # Evaluate on the final test set
     num_test_batches = math.ceil(NUM_TEST_SAMPLES/batch_size)
-    test_accuracy = tfe.metrics.Accuracy()
+    test_accuracy = tf.metrics.Accuracy()
     for test_batch in range(num_test_batches):
         test = test_data.sample(batch_size)
         X_test = test.drop(columns=['type'])
