@@ -189,7 +189,7 @@ def mains():
     # Load the best model
     root = tf.Checkpoint(optimizer=optimizer,
                           model=model,
-                          optimizer_step=tf.train.get_or_create_global_step())
+                          optimizer_step=tf.compat.v1.train.get_or_create_global_step())
     root.restore(tf.train.latest_checkpoint(checkpoint_directory))
 
     # Evaluate on the final test set
