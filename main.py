@@ -152,7 +152,7 @@ class TempEnsemModel(tf.keras.Model):
 
         super(TempEnsemModel, self).__init__()
         vocabulary_size, embedding_matrix=embedding()
-        self.embedding_layer_title = Embedding(vocabulary_size,EMBEDDING_DIM, weights=[embedding_matrix])
+        self.embedding_layer = Embedding(vocabulary_size,EMBEDDING_DIM, weights=[embedding_matrix])
         self.reshape_title = Reshape((sequence_length_title, EMBEDDING_DIM, 1))
         self.conv_0_title = Conv2D(num_filters, (filter_sizes[0], EMBEDDING_DIM), activation='relu',
                               kernel_regularizer=regularizers.l2(0.01))

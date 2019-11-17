@@ -98,10 +98,12 @@ def mains():
 
             labeled=label_data.sample(n=batch_size)
             X_unlabeled_train=unlabel_data.sample(n=batch_size)
-
+            
+            y_labeled_train=labeled.type.apply(lambda x: 0 if (x =='fake') else 1).values
             X_labeled_train=labeled.drop(columns=['type'])
             labeled_indexes=labeled.index.values
-            y_labeled_train = to_categorical(np.asarray(labels[labeled.index]))
+            
+            y_labeled_train = to_categorical(y_labeled_train,num_classes=2)
             unlabeled_indexes=X_unlabeled_train.index.values
 
             #X_labeled_train, y_labeled_train, labeled_indexes = train_labeled_iterator.get_next()
@@ -136,8 +138,9 @@ def mains():
             if (batch_nr == batches_per_epoch - 1):
                 for batch_val_nr in range(batches_per_epoch_val):
                     val= val_data.sample(n=batch_size)
+                    y_val = val.type.apply(lambda x: 0 if (x =='fake') else 1).values
                     X_val=val.drop(columns=['type'])
-                    y_val=to_categorical(np.asarray(labels[val.index]))
+                    y_val=to_categorical(y_val,num_classes=2)
                     #X_val, y_val, _ = validation_iterator.get_next()
                     y_val_predictions = model(X_val, training=False)
 
@@ -197,8 +200,9 @@ def mains():
     test_accuracy = tf.metrics.Accuracy()
     for test_batch in range(num_test_batches):
         test = test_data.sample(n=batch_size)
+        y_test = test.type.apply(lambda x: 0 if (x =='fake') else 1).values
         X_test = test.drop(columns=['type'])
-        y_test = to_categorical(np.asarray(labels[test.index]))
+        y_test = to_categorical(y_test,num_classes=2)
         #X_test, y_test, _ = test_iterator.get_next()
         y_test_predictions = model(X_test, training=False)
         test_accuracy(tf.argmax(y_test_predictions, 1), tf.argmax(y_test, 1))
