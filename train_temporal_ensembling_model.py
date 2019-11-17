@@ -62,8 +62,8 @@ def mains():
         learning_rate=learning_rate, beta_1=beta_1, beta_2=0.980)
 
     best_val_accuracy = 0
-    global_step = tf.train.get_or_create_global_step()
-    writer = tf.contrib.summary.create_file_writer(tensorboard_logs_directory)
+    global_step = tf.compat.v1.train.get_or_create_global_step()
+    writer = tf.summary.create_file_writer(tensorboard_logs_directory)
     writer.set_as_default()
 
     # Ensemble predictions - the first samples of the array are for the labeled samples
@@ -166,23 +166,23 @@ def mains():
             checkpoint.save(file_prefix=checkpoint_directory)
 
         # Record summaries
-        with tf.contrib.summary.record_summaries_every_n_global_steps(1):
-            tf.contrib.summary.scalar('Train Loss', epoch_loss_avg.result())
-            tf.contrib.summary.scalar(
+        with tf.summary.record_summaries_every_n_global_steps(1):
+            tf.summary.scalar('Train Loss', epoch_loss_avg.result())
+            tf.summary.scalar(
                 'Train Accuracy', epoch_accuracy.result())
-            tf.contrib.summary.scalar(
+            tf.summary.scalar(
                 'Validation Loss', epoch_loss_avg_val.result())
-            tf.contrib.summary.histogram(
+            tf.summary.histogram(
                 'Z', tf.convert_to_tensor(Z), step=global_step)
-            tf.contrib.summary.histogram(
+            tf.summary.histogram(
                 'z', tf.convert_to_tensor(z), step=global_step)
-            tf.contrib.summary.scalar(
+            tf.summary.scalar(
                 'Validation Accuracy', epoch_accuracy_val.result())
-            tf.contrib.summary.scalar(
+            tf.summary.scalar(
                 'Unsupervised Weight', unsupervised_weight)
-            tf.contrib.summary.scalar('Learning Rate', learning_rate.numpy())
-            tf.contrib.summary.scalar('Ramp Up Function', rampup_value)
-            tf.contrib.summary.scalar('Ramp Down Function', rampdown_value)
+            tf.summary.scalar('Learning Rate', learning_rate.numpy())
+            tf.summary.scalar('Ramp Up Function', rampup_value)
+            tf.summary.scalar('Ramp Down Function', rampdown_value)
 
     print('\nTrain Ended! Best Validation accuracy = {}\n'.format(best_val_accuracy))
 
