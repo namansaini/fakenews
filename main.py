@@ -174,7 +174,7 @@ class TempEnsemModel(tf.keras.Model):
         self.dropout1= Dropout(drop)
         self.dense2 = Dense(50, activation='relu')
         self.dropout2= Dropout(drop)
-        self.out = Dense(4, activation='softmax')
+        self.out = Dense(2, activation='softmax')
 
 
 
