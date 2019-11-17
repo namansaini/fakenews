@@ -96,8 +96,8 @@ def mains():
 
         for batch_nr in range(batches_per_epoch):
 
-            labeled=label_data.sample(batch_size)
-            X_unlabeled_train=unlabel_data.sample(batch_size)
+            labeled=label_data.sample(n=batch_size)
+            X_unlabeled_train=unlabel_data.sample(n=batch_size)
 
             X_labeled_train=labeled.drop(columns=['type'])
             labeled_indexes=labeled.index.values
@@ -135,7 +135,7 @@ def mains():
 
             if (batch_nr == batches_per_epoch - 1):
                 for batch_val_nr in range(batches_per_epoch_val):
-                    val= val_data.sample(batch_size)
+                    val= val_data.sample(n=batch_size)
                     X_val=val.drop(columns=['type'])
                     y_val=to_categorical(np.asarray(labels[val.index]))
                     #X_val, y_val, _ = validation_iterator.get_next()
@@ -196,7 +196,7 @@ def mains():
     num_test_batches = math.ceil(NUM_TEST_SAMPLES/batch_size)
     test_accuracy = tf.metrics.Accuracy()
     for test_batch in range(num_test_batches):
-        test = test_data.sample(batch_size)
+        test = test_data.sample(n=batch_size)
         X_test = test.drop(columns=['type'])
         y_test = to_categorical(np.asarray(labels[test.index]))
         #X_test, y_test, _ = test_iterator.get_next()
