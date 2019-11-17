@@ -21,8 +21,8 @@ data=data.dropna()
 
 test_data=data.sample(frac=0.3,random_state=20)
 train_data=data.drop(test_data.index)
-NUM_TRAIN_SAMPLES = train_data.count()
-NUM_TEST_SAMPLES = test_data.count()
+NUM_TRAIN_SAMPLES = train_data.shape[0]
+NUM_TEST_SAMPLES = test_data.shape[0]
 
 def encode_label(column):
     columns = column.unique()
@@ -49,9 +49,9 @@ label_data = train_data.drop(unlabel_data.index)
 
 unlabel_data = unlabel_data.drop(columns=['type'])
 
-num_labeled_samples =label_data.count()
-num_validation_samples = val_data.count()
-num_train_unlabeled_samples =unlabel_data.count()
+num_labeled_samples =label_data.shape[0]
+num_validation_samples = val_data.shape[0]
+num_train_unlabeled_samples =unlabel_data.shape[0]
 
 
 EMBEDDING_DIM = 300
@@ -122,8 +122,8 @@ drop = 0.2
 from tensorflow.keras.layers import Dense, Input, GlobalMaxPooling1D
 from tensorflow.keras.layers import Conv1D, MaxPooling1D, Embedding
 from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Input, Dense, Embedding, Conv2D, MaxPooling2D, Dropout,concatenate
-from tensorflow.keras.layers.core import Reshape, Flatten
+from tensorflow.keras.layers import Input, Dense, Embedding, Conv2D, MaxPooling2D, Dropout,concatenate,Reshape,Flatten
+#from tensorflow.keras.layers.core import Reshape, Flatten
 from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.models import Model

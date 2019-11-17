@@ -3,7 +3,8 @@
 Created on Thu Nov 14 12:07:05 2019
 
 """
-
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import math
 import queue
 
@@ -15,7 +16,7 @@ import tensorflow as tf
 from main import num_validation_samples,num_labeled_samples,num_train_unlabeled_samples,NUM_TEST_SAMPLES,NUM_TRAIN_SAMPLES
 from main import label_data,val_data,unlabel_data,test_data,labels
 # Enable Eager Execution
-tf.enable_eager_execution()
+#tf.enable_eager_execution()
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.utils import to_categorical
@@ -57,7 +58,7 @@ def mains():
     model = TempEnsemModel()
     # Paper has beta2=0.990 but I experimented decreasing it a little bit (as recomended in the paper) and it led
     # to more stable training
-    optimizer = tf.train.AdamOptimizer(
+    optimizer = tf.train.Adam(
         learning_rate=learning_rate, beta1=beta_1, beta2=0.980) 
 
     best_val_accuracy = 0
