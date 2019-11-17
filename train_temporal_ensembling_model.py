@@ -30,7 +30,7 @@ def mains():
 
     # Editable variables
 
-    batch_size = 100
+    batch_size = 10
     epochs = 30
     max_learning_rate = 0.0002 # 0.001 as recomended in the paper leads to unstable training. 
     initial_beta1 = 0.9
