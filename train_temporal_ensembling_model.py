@@ -69,8 +69,8 @@ def mains():
     # Ensemble predictions - the first samples of the array are for the labeled samples
     # and the remaining ones are for the unlabeled samples.
     # The Z and z are the notation used in the paper
-    Z = np.zeros((NUM_TRAIN_SAMPLES, 10))
-    z = np.zeros((NUM_TRAIN_SAMPLES, 10))
+    Z = np.zeros((NUM_TRAIN_SAMPLES, 2))
+    z = np.zeros((NUM_TRAIN_SAMPLES, 2))
     # variable needed if you use a batch ratio different than the true ratio
     sample_epoch = np.zeros((NUM_TRAIN_SAMPLES, 1))
 
