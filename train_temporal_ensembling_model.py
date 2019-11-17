@@ -58,8 +58,8 @@ def mains():
     model = TempEnsemModel()
     # Paper has beta2=0.990 but I experimented decreasing it a little bit (as recomended in the paper) and it led
     # to more stable training
-    optimizer = tf.train.Adam(
-        learning_rate=learning_rate, beta1=beta_1, beta2=0.980) 
+    optimizer = tf.optimizers.Adam(
+        learning_rate=learning_rate, beta_1=beta_1, beta_2=0.980)
 
     best_val_accuracy = 0
     global_step = tf.train.get_or_create_global_step()
