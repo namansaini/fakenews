@@ -189,14 +189,14 @@ x = Dense(50, activation='relu')(x)
 x = Dropout(drop)(x)
 x = Dense(50, activation='relu')(x)
 x = Dropout(drop)(x)
-output = Dense(4, activation='softmax')(x)
+output = Dense(2, activation='softmax')(x)
 
 model = Model(inputs=[inputs_title,inputs_text], outputs=output)
 
 
 
 
-def temporal_ensembling_loss(X_train_labeled, y_train_labeled, X_train_unlabeled, model, unsupervised_weight, ensembling_targets):
+def temporal_ensembling_loss(X_train_labeled, y_train_labeled, X_train_unlabeled, unsupervised_weight, ensembling_targets):
     """ Gets the loss for the temporal ensembling model
     Arguments:
         X_train_labeled {tensor} -- labeled samples
@@ -220,7 +220,7 @@ def temporal_ensembling_loss(X_train_labeled, y_train_labeled, X_train_unlabeled
             tf.losses.mean_squared_error(ensembling_targets, current_predictions))
 
 
-def temporal_ensembling_gradients(X_train_labeled, y_train_labeled, X_train_unlabeled, model, unsupervised_weight, ensembling_targets):
+def temporal_ensembling_gradients(X_train_labeled, y_train_labeled, X_train_unlabeled, unsupervised_weight, ensembling_targets):
     """ Gets the gradients for the temporal ensembling model
     Arguments:
         X_train_labeled {tensor} -- labeled samples
@@ -237,7 +237,7 @@ def temporal_ensembling_gradients(X_train_labeled, y_train_labeled, X_train_unla
 
     with tf.GradientTape() as tape:
         ensemble_precitions, loss_value = temporal_ensembling_loss(X_train_labeled, y_train_labeled, X_train_unlabeled,
-                                                                   model, unsupervised_weight, ensembling_targets)
+                                                                    unsupervised_weight, ensembling_targets)
 
     return ensemble_precitions, loss_value, tape.gradient(loss_value, model.variables)
 
@@ -335,7 +335,6 @@ def mains():
 
     batches_per_epoch_val = int(round(num_validation_samples / batch_size))
 
-    model = TempEnsemModel()
     # Paper has beta2=0.990 but I experimented decreasing it a little bit (as recomended in the paper) and it led
     # to more stable training
     optimizer = tf.optimizers.Adam(
@@ -395,7 +394,7 @@ def mains():
             current_ensemble_targets = z[current_ensemble_indexes]
 
             current_outputs, loss_val, grads = temporal_ensembling_gradients(X_labeled_train, y_labeled_train, X_unlabeled_train,
-                                                                             model, unsupervised_weight, current_ensemble_targets)
+                                                                             unsupervised_weight, current_ensemble_targets)
 
             optimizer.apply_gradients(zip(grads, model.variables),
                                       global_step=global_step)
