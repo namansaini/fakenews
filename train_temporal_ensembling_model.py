@@ -408,8 +408,7 @@ def mains():
             current_outputs, loss_val, grads = temporal_ensembling_gradients(X_labeled_train, y_labeled_train, X_unlabeled_train,
                                                                              unsupervised_weight, current_ensemble_targets)
 
-            optimizer.apply_gradients(zip(grads, model.variables),
-                                      global_step=global_step)
+            optimizer.apply_gradients(zip(grads, model.variables),global_step)
 
             epoch_loss_avg(loss_val)
             epoch_accuracy(tf.argmax(model(change_input(X_labeled_train)), 1),
