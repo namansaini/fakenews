@@ -20,8 +20,8 @@ data=pd.read_csv("all_data.csv", usecols=['author','main_img_url','site_url','te
 data=data.dropna()
 
 test_data=data.sample(frac=0.3,random_state=20)
-train_data=data.drop(test_data.index)
 
+NUM_TRAIN_SAMPLES = train_data.shape[0]
 NUM_TEST_SAMPLES = test_data.shape[0]
 
 def encode_label(column):
@@ -59,7 +59,6 @@ num_validation_samples = val_data.shape[0]
 num_train_unlabeled_samples =unlabel_data.shape[0]
 
 NUM_TRAIN_SAMPLES = num_labeled_samples + num_train_unlabeled_samples
-
 
 EMBEDDING_DIM = 300
 NUM_WORDS=20000
