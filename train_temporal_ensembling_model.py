@@ -4,7 +4,6 @@ import math
 import pandas as pd
 import tensorflow as tf
 
-
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.utils import to_categorical
@@ -116,7 +115,6 @@ def  change_input(input):
     text = pad_sequences(sequences_train_text,maxlen=sequence_length_text)
     # X_val_text = pad_sequences(sequences_valid_text, maxlen=X_train_text.shape[1])
     title = pad_sequences(sequences_train_title,maxlen=sequence_length_title)
-    print(title.shape[1],text.shape[1])
     return [title,text]
 
 
@@ -320,7 +318,7 @@ def mains():
     # Editable variables
 
     batch_size = 10
-    epochs = 30
+    epochs = 5
     max_learning_rate = 0.0002 # 0.001 as recomended in the paper leads to unstable training. 
     initial_beta1 = 0.9
     final_beta1 = 0.5
