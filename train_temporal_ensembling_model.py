@@ -227,7 +227,7 @@ def temporal_ensembling_loss(X_train_labeled, y_train_labeled, X_train_unlabeled
 
     current_predictions = tf.concat([z_labeled, z_unlabeled], 0)
 
-    return current_predictions, tf.losses.softmax_cross_entropy(
+    return current_predictions, tf.compat.v1.losses.softmax_cross_entropy(
         y_train_labeled, z_labeled) + unsupervised_weight * (
             tf.losses.mean_squared_error(ensembling_targets, current_predictions))
 
