@@ -152,7 +152,7 @@ class TempEnsemModel(tf.keras.Model):
 
         super(TempEnsemModel, self).__init__()
         vocabulary_size, embedding_matrix=embedding()
-        self.embedding_layer = Embedding(vocabulary_size,EMBEDDING_DIM, weights=[embedding_matrix])
+        self.embedding_layer = Embedding(vocabulary_size,EMBEDDING_DIM, weights=[embedding_matrix], trainable = False)
         self.reshape_title = Reshape((sequence_length_title, EMBEDDING_DIM, 1))
         self.conv_0_title = Conv2D(num_filters, (filter_sizes[0], EMBEDDING_DIM), activation='relu',
                               kernel_regularizer=regularizers.l2(0.01))
@@ -216,8 +216,8 @@ class TempEnsemModel(tf.keras.Model):
         
         #title layer
         #inputs_title = Input(shape=(sequence_length_title,))
-        h1 = self.embedding_layer(title,training)
-        h1 = self.reshape_title(h1,training)
+        h1 = self.embedding_layer(title)
+        h1 = self.reshape_title(h1)
         #reshape_title = Reshape((sequence_length_title,EMBEDDING_DIM,1))(embedding_title)
         if training:
             h1 = self.__aditive_gaussian_noise(h1, 0.15)

@@ -219,9 +219,9 @@ def temporal_ensembling_loss(X_train_labeled, y_train_labeled, X_train_unlabeled
         {tensor} -- predictions for the ensembles
         {tensor} -- loss value
     """
-
-    z_labeled = model(X_train_labeled) #X_train_labled_title,X_train_labeled_text
-    z_unlabeled = model(X_train_unlabeled) #X_train_unlabled_title,X_train_unlabeled_text
+    
+    z_labeled = model(change_input(X_train_labeled)) #X_train_labled_title,X_train_labeled_text
+    z_unlabeled = model(change_input(X_train_unlabeled)) #X_train_unlabled_title,X_train_unlabeled_text
 
     current_predictions = tf.concat([z_labeled, z_unlabeled], 0)
 
@@ -410,12 +410,12 @@ def mains():
                                       global_step=global_step)
 
             epoch_loss_avg(loss_val)
-            epoch_accuracy(tf.argmax(model(X_labeled_train), 1),
+            epoch_accuracy(tf.argmax(model(change_input(X_labeled_train)), 1),
                            tf.argmax(y_labeled_train, 1))
 
             epoch_loss_avg(loss_val)
             epoch_accuracy(
-                tf.argmax(model(X_labeled_train), 1), tf.argmax(y_labeled_train, 1))
+                tf.argmax(model(change_input(X_labeled_train)), 1), tf.argmax(y_labeled_train, 1))
 
             Z[current_ensemble_indexes, :] = alpha * \
                 Z[current_ensemble_indexes, :] + (1-alpha) * current_outputs
@@ -431,7 +431,7 @@ def mains():
                     X_val=val.drop(columns=['type'])
                     y_val=to_categorical(y_val,num_classes=2)
                     #X_val, y_val, _ = validation_iterator.get_next()
-                    y_val_predictions = model(X_val, training=False)
+                    y_val_predictions = model(change_input(X_val), training=False)
 
                     epoch_loss_avg_val(tf.losses.softmax_cross_entropy(
                         y_val, y_val_predictions))
@@ -493,7 +493,7 @@ def mains():
         X_test = test.drop(columns=['type'])
         y_test = to_categorical(y_test,num_classes=2)
         #X_test, y_test, _ = test_iterator.get_next()
-        y_test_predictions = model(X_test, training=False)
+        y_test_predictions = model(change_input(X_test), training=False)
         test_accuracy(tf.argmax(y_test_predictions, 1), tf.argmax(y_test, 1))
 
     print("Final Test Accuracy: {:.6%}".format(test_accuracy.result()))
