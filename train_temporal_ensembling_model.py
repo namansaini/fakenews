@@ -459,22 +459,22 @@ def mains():
 
         # Record summaries
         with tf.summary.record_if(True):
-            tf.summary.scalar('Train Loss', epoch_loss_avg.result())
+            tf.summary.scalar('Train Loss', epoch_loss_avg.result(),step=global_step)
             tf.summary.scalar(
-                'Train Accuracy', epoch_accuracy.result())
+                'Train Accuracy', epoch_accuracy.result(), step=global_step)
             tf.summary.scalar(
-                'Validation Loss', epoch_loss_avg_val.result())
+                'Validation Loss', epoch_loss_avg_val.result(), step=global_step)
             tf.summary.histogram(
                 'Z', tf.convert_to_tensor(Z), step=global_step)
             tf.summary.histogram(
                 'z', tf.convert_to_tensor(z), step=global_step)
             tf.summary.scalar(
-                'Validation Accuracy', epoch_accuracy_val.result())
+                'Validation Accuracy', epoch_accuracy_val.result(), step=global_step)
             tf.summary.scalar(
-                'Unsupervised Weight', unsupervised_weight)
-            tf.summary.scalar('Learning Rate', learning_rate.numpy())
-            tf.summary.scalar('Ramp Up Function', rampup_value)
-            tf.summary.scalar('Ramp Down Function', rampdown_value)
+                'Unsupervised Weight', unsupervised_weight, step=global_step)
+            tf.summary.scalar('Learning Rate', learning_rate.numpy(), step=global_step)
+            tf.summary.scalar('Ramp Up Function', rampup_value, step=global_step)
+            tf.summary.scalar('Ramp Down Function', rampdown_value, step=global_step)
 
     print('\nTrain Ended! Best Validation accuracy = {}\n'.format(best_val_accuracy))
 
