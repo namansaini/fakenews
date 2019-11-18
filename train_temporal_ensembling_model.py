@@ -62,7 +62,7 @@ NUM_TRAIN_SAMPLES = num_labeled_samples + num_train_unlabeled_samples
 
 EMBEDDING_DIM = 300
 NUM_WORDS=20000
-tokenizer = Tokenizer(num_words=NUM_WORDS, filters='!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n\'', lower=True)
+tokenizer = Tokenizer(filters='!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n\'', lower=True)
 
 
 
@@ -72,7 +72,7 @@ tokenizer.fit_on_texts(train_data.title)
 tokenizer.fit_on_texts(val_data.title)
 word_index = tokenizer.word_index
 word_vectors = KeyedVectors.load_word2vec_format('GoogleNews-vectors-negative300.bin', binary=True)
-vocabulary_size = min(len(word_index) + 1, NUM_WORDS)
+vocabulary_size = len(word_index) + 1
 embedding_matrix = np.zeros((vocabulary_size, EMBEDDING_DIM))
 for word, i in word_index.items():
         if i >= NUM_WORDS:
@@ -88,24 +88,6 @@ embedding_layer = Embedding(vocabulary_size, EMBEDDING_DIM, weights=[embedding_m
 
 
     # print('Found %s unique tokens.' % len(word_index))
-
-
-def  change_input(input):
-    sequences_train_text = tokenizer.texts_to_sequences(input.text)
-    # sequences_valid_text = tokenizer.texts_to_sequences(val_data.text)
-    sequences_train_title = tokenizer.texts_to_sequences(input.title)
-    # sequences_valid_title = tokenizer.texts_to_sequences(val_data.title)
-
-    text = pad_sequences(sequences_train_text)
-    # X_val_text = pad_sequences(sequences_valid_text, maxlen=X_train_text.shape[1])
-    title = pad_sequences(sequences_train_title)
-    return [title,text]
-
-
-
-#print('Shape of X train and X validation tensor:', X_train_text.shape,X_val_text.shape)
-#print('Shape of label train and validation tensor:', y_train.shape,y_val.shape)
-
 sequences_train_text = tokenizer.texts_to_sequences(train_data.text)
 #sequences_valid_text = tokenizer.texts_to_sequences(val_data.text)
 sequences_train_title = tokenizer.texts_to_sequences(train_data.title)
@@ -124,6 +106,25 @@ X_train_title = pad_sequences(sequences_train_title)
 sequence_length_title = X_train_title.shape[1]
 sequence_length_text=X_train_text.shape[1]
 del (X_train_text,X_train_title,sequences_train_text,sequences_train_title)
+
+def  change_input(input):
+    sequences_train_text = tokenizer.texts_to_sequences(input.text)
+    # sequences_valid_text = tokenizer.texts_to_sequences(val_data.text)
+    sequences_train_title = tokenizer.texts_to_sequences(input.title)
+    # sequences_valid_title = tokenizer.texts_to_sequences(val_data.title)
+
+    text = pad_sequences(sequences_train_text,maxlen=sequence_length_text)
+    # X_val_text = pad_sequences(sequences_valid_text, maxlen=X_train_text.shape[1])
+    title = pad_sequences(sequences_train_title,maxlen=sequence_length_title)
+    print(title.shape[1],text.shape[1])
+    return [title,text]
+
+
+
+#print('Shape of X train and X validation tensor:', X_train_text.shape,X_val_text.shape)
+#print('Shape of label train and validation tensor:', y_train.shape,y_val.shape)
+
+
 
 filter_sizes = [2, 3, 4]
 num_filters = 100
@@ -148,6 +149,7 @@ from tensorflow.keras import regularizers
 
 
 inputs_title = Input(shape=(sequence_length_title,))
+print(tf.shape(inputs_title))
 embedding_title = embedding_layer(inputs_title)
 reshape_title = Reshape((sequence_length_title, EMBEDDING_DIM, 1))(embedding_title)
 print(tf.shape(embedding_title))
@@ -159,11 +161,11 @@ conv_1_title = Conv2D(num_filters, (filter_sizes[1], EMBEDDING_DIM), activation=
                       kernel_regularizer=regularizers.l2(0.01))(reshape_title)
 conv_2_title = Conv2D(num_filters, (filter_sizes[2], EMBEDDING_DIM), activation='relu',
                       kernel_regularizer=regularizers.l2(0.01))(reshape_title)
-
+print("convolution success")
 maxpool_0_title = MaxPooling2D((sequence_length_title - filter_sizes[0] + 1, 1), strides=(1, 1))(conv_0_title)
 maxpool_1_title = MaxPooling2D((sequence_length_title - filter_sizes[1] + 1, 1), strides=(1, 1))(conv_1_title)
 maxpool_2_title = MaxPooling2D((sequence_length_title - filter_sizes[2] + 1, 1), strides=(1, 1))(conv_2_title)
-
+print("max pool success")
 merged_tensor_title = concatenate([maxpool_0_title, maxpool_1_title, maxpool_2_title], axis=1)
 flatten = Flatten()(merged_tensor_title)
 reshape = Reshape((3 * num_filters,))(flatten)
