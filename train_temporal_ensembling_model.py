@@ -64,7 +64,7 @@ NUM_WORDS=20000
 tokenizer = Tokenizer(num_words=NUM_WORDS, filters='!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n\'', lower=True)
 
 
-def embedding():
+def create_embedding_layer():
     tokenizer.fit_on_texts(train_data.text)
     tokenizer.fit_on_texts(val_data.text)
 
@@ -87,7 +87,8 @@ def embedding():
             embedding_matrix[i] = np.random.normal(0, np.sqrt(0.25), EMBEDDING_DIM)
 
     del (word_vectors)
-    return vocabulary_size,embedding_matrix
+    embedding = Embedding(vocabulary_size, EMBEDDING_DIM, weights=[embedding_matrix], trainable=True)
+    return embedding
 
     # print('Found %s unique tokens.' % len(word_index))
 
@@ -135,162 +136,62 @@ from tensorflow.keras.models import Model
 from tensorflow.keras import regularizers
 
 
+embedding_layer=create_embedding_layer()
+
+inputs_title = Input(shape=(sequence_length_title,))
+embedding_title = embedding_layer(inputs_title)
+reshape_title = Reshape((sequence_length_title, EMBEDDING_DIM, 1))(embedding_title)
 
 
-class TempEnsemModel(tf.keras.Model):
-    """ Class for defining eager compatible tfrecords file
-        I did not use tfe.Network since it will be depracated in the
-        future by tensorflow.
-    """
+conv_0_title = Conv2D(num_filters, (filter_sizes[0], EMBEDDING_DIM), activation='relu',
+                      kernel_regularizer=regularizers.l2(0.01))(reshape_title)
+conv_1_title = Conv2D(num_filters, (filter_sizes[1], EMBEDDING_DIM), activation='relu',
+                      kernel_regularizer=regularizers.l2(0.01))(reshape_title)
+conv_2_title = Conv2D(num_filters, (filter_sizes[2], EMBEDDING_DIM), activation='relu',
+                      kernel_regularizer=regularizers.l2(0.01))(reshape_title)
 
-    def __init__(self):
-        """ Init
-            Set all the layers that need to be tracked in the process of
-            gradients descent (pooling and dropout for example dont need
-            to be stored)
-        """
+maxpool_0_title = MaxPooling2D((sequence_length_title - filter_sizes[0] + 1, 1), strides=(1, 1))(conv_0_title)
+maxpool_1_title = MaxPooling2D((sequence_length_title - filter_sizes[1] + 1, 1), strides=(1, 1))(conv_1_title)
+maxpool_2_title = MaxPooling2D((sequence_length_title - filter_sizes[2] + 1, 1), strides=(1, 1))(conv_2_title)
 
-        super(TempEnsemModel, self).__init__()
-        vocabulary_size, embedding_matrix=embedding()
-        self.embedding_layer = Embedding(vocabulary_size,EMBEDDING_DIM, weights=[embedding_matrix])
-        self.reshape_title = Reshape((sequence_length_title, EMBEDDING_DIM, 1))
-        self.conv_0_title = Conv2D(num_filters, (filter_sizes[0], EMBEDDING_DIM), activation='relu',
-                              kernel_regularizer=regularizers.l2(0.01))
-        self.conv_1_title = Conv2D(num_filters, (filter_sizes[1], EMBEDDING_DIM), activation='relu',
-                              kernel_regularizer=regularizers.l2(0.01))
-        self.conv_2_title = Conv2D(num_filters, (filter_sizes[2], EMBEDDING_DIM), activation='relu',
-                                   kernel_regularizer=regularizers.l2(0.01))
-        self.maxpool_0_title = MaxPooling2D((sequence_length_title - filter_sizes[0] + 1, 1), strides=(1, 1))
-        self.maxpool_1_title = MaxPooling2D((sequence_length_title - filter_sizes[1] + 1, 1), strides=(1, 1))
-        self.maxpool_2_title = MaxPooling2D((sequence_length_title - filter_sizes[2] + 1, 1), strides=(1, 1))
-        self.dense_title = Dense(50, activation='relu', kernel_regularizer='l2', name='DenseTitle')
-        self.conv_0_text = Conv2D(num_filters, (filter_sizes[0], EMBEDDING_DIM), activation='relu',
-                             kernel_regularizer=regularizers.l2(0.01))
-        self.conv_1_text = Conv2D(num_filters, (filter_sizes[1], EMBEDDING_DIM), activation='relu',
-                             kernel_regularizer=regularizers.l2(0.01))
-        self.conv_2_text = Conv2D(num_filters, (filter_sizes[2], EMBEDDING_DIM), activation='relu',
-                             kernel_regularizer=regularizers.l2(0.01))
+merged_tensor_title = concatenate([maxpool_0_title, maxpool_1_title, maxpool_2_title], axis=1)
+flatten = Flatten()(merged_tensor_title)
+reshape = Reshape((3 * num_filters,))(flatten)
+dense_title = Dense(50, activation='relu', kernel_regularizer='l2', name='DenseTitle')(reshape)
 
-        self.maxpool_0_text = MaxPooling2D((sequence_length_text - filter_sizes[0] + 1, 1), strides=(1, 1))
-        self.maxpool_1_text = MaxPooling2D((sequence_length_text - filter_sizes[1] + 1, 1), strides=(1, 1))
-        self.maxpool_2_text = MaxPooling2D((sequence_length_text - filter_sizes[2] + 1, 1), strides=(1, 1))
-        self. dense_text = Dense(100, activation='relu', kernel_regularizer='l2', name='DenseText')
-        self.dense1 = Dense(50, activation='relu')
-        self.dropout1= Dropout(drop)
-        self.dense2 = Dense(50, activation='relu')
-        self.dropout2= Dropout(drop)
-        self.out = Dense(2, activation='softmax')
+# text layer
+inputs_text = Input(shape=(sequence_length_text,))
+embedding_text = embedding_layer(inputs_text)
+reshape_text = Reshape((sequence_length_text, EMBEDDING_DIM, 1))(embedding_text)
 
 
 
-    def __aditive_gaussian_noise(self, input, std):
-        """ Function to add additive zero mean noise as described in the paper
-        Arguments:
-            input {tensor} -- image
-            std {int} -- std to use in the random_normal
-        Returns:
-            {tensor} -- image with added noise
-        """
+conv_0_text = Conv2D(num_filters, (filter_sizes[0], EMBEDDING_DIM), activation='relu',
+                     kernel_regularizer=regularizers.l2(0.01))(reshape_text)
+conv_1_text = Conv2D(num_filters, (filter_sizes[1], EMBEDDING_DIM), activation='relu',
+                     kernel_regularizer=regularizers.l2(0.01))(reshape_text)
+conv_2_text = Conv2D(num_filters, (filter_sizes[2], EMBEDDING_DIM), activation='relu',
+                     kernel_regularizer=regularizers.l2(0.01))(reshape_text)
 
-        noise = tf.random_normal(shape=tf.shape(
-            input), mean=0.0, stddev=std, dtype=tf.float32)
-        return input + noise
+maxpool_0_text = MaxPooling2D((sequence_length_text - filter_sizes[0] + 1, 1), strides=(1, 1))(conv_0_text)
+maxpool_1_text = MaxPooling2D((sequence_length_text - filter_sizes[1] + 1, 1), strides=(1, 1))(conv_1_text)
+maxpool_2_text = MaxPooling2D((sequence_length_text - filter_sizes[2] + 1, 1), strides=(1, 1))(conv_2_text)
 
+merged_tensor_text = concatenate([maxpool_0_text, maxpool_1_text, maxpool_2_text], axis=1)
+flatten = Flatten()(merged_tensor_text)
+reshape = Reshape((3 * num_filters,))(flatten)
+dense_text = Dense(100, activation='relu', kernel_regularizer='l2', name='DenseText')(reshape)
 
-    def call(self, input, training=True):
-        """ Function that allows running a tensor through the pi model
-        Arguments:2
-            input {[tensor]} -- batch of images
-            training {bool} -- if true applies augmentaton and additive noise
-        Returns:
-            [tensor] -- predictions
-        """
-        
-        title = input.title
-        text = input.text
-        sequences_train_text = tokenizer.texts_to_sequences(text)
-        sequences_train_title = tokenizer.texts_to_sequences(title)
+x = concatenate([dense_title, dense_text])
 
-        title = pad_sequences(sequences_train_text)
-        text = pad_sequences(sequences_train_title)
-        
-        #title layer
-        #inputs_title = Input(shape=(sequence_length_title,))
-        h1 = self.embedding_layer(title,training)
-        h1 = self.reshape_title(h1,training)
-        #reshape_title = Reshape((sequence_length_title,EMBEDDING_DIM,1))(embedding_title)
-        if training:
-            h1 = self.__aditive_gaussian_noise(h1, 0.15)
-        conv_layer0_title = self.conv_0_title(h1,training)
-        conv_layer1_title = self.conv_1_title(h1,training)
-        conv_layer2_title = self.conv_2_title(h1,training)
-        
-        maxpool_layer0_title = self.maxpool_0_title(conv_layer0_title)
-        maxpool_layer1_title = self.maxpool_1_title(conv_layer1_title)
-        maxpool_layer2_title = self.maxpool_2_title(conv_layer2_title)
+# Common part
+x = Dense(50, activation='relu')(x)
+x = Dropout(drop)(x)
+x = Dense(50, activation='relu')(x)
+x = Dropout(drop)(x)
+output = Dense(4, activation='softmax')(x)
 
-        merged_tensor_title = concatenate([maxpool_layer0_title, maxpool_layer1_title, maxpool_layer2_title], axis=1)
-
-        flattenTitle = Flatten()(merged_tensor_title)
-        reshapeTitle = Reshape((3*num_filters,))(flattenTitle)
-        denseTitle = self.dense_title(reshapeTitle,training)
-        #dense_title = Dense(50, activation='relu', kernel_regularizer='l2', name='DenseTitle')(reshape)
-        
-        #text layer
-        #inputs_text = Input(shape=(sequence_length_text,))
-        h2 = self.embedding_layer(text)
-        h2 = self.reshape_title(h2,training)
-        
-        if training:
-            h2 = self.__aditive_gaussian_noise(h2, 0.15)
-        conv_layer0_text = self.conv_0_title(h2,training)
-        conv_layer1_text = self.conv_1_title(h2,training)
-        conv_layer2_text = self.conv_2_title(h2,training)
-        
-        maxpool_layer0_text = self.maxpool_0_title(conv_layer0_text)
-        maxpool_layer1_text = self.maxpool_1_title(conv_layer1_text)
-        maxpool_layer2_text = self.maxpool_2_title(conv_layer2_text)
-        
-        '''
-        conv_0_text = Conv2D(num_filters, (filter_sizes[0], EMBEDDING_DIM),activation='relu',kernel_regularizer=regularizers.l2(0.01))(reshape_text)
-        conv_1_text = Conv2D(num_filters, (filter_sizes[1], EMBEDDING_DIM),activation='relu',kernel_regularizer=regularizers.l2(0.01))(reshape_text)
-        conv_2_text = Conv2D(num_filters, (filter_sizes[2], EMBEDDING_DIM),activation='relu',kernel_regularizer=regularizers.l2(0.01))(reshape_text)
-        
-        maxpool_0_text = MaxPooling2D((sequence_length_text - filter_sizes[0] + 1, 1), strides=(1,1))(conv_0_text)
-        maxpool_1_text = MaxPooling2D((sequence_length_text - filter_sizes[1] + 1, 1), strides=(1,1))(conv_1_text)
-        maxpool_2_text = MaxPooling2D((sequence_length_text - filter_sizes[2] + 1, 1), strides=(1,1))(conv_2_text) '''
-        
-        merged_tensor_text = concatenate([maxpool_layer0_text, maxpool_layer1_text, maxpool_layer2_text], axis=1)
-        flattenText = Flatten()(merged_tensor_text)
-        reshapeText = Reshape((3*num_filters,))(flattenText)
-        denseText = self.dense_text(reshapeText)
-        
-        x = concatenate([denseTitle, denseText])
-        
-        #Common part
-        x = self.dense1(x)
-        x = self.droput1(x)
-        x = self.dense2(x)
-        x = self.dropout2(x)
-        return self.out(x)
-'''  x = Dense(50, activation='relu')(x)
-        x = Dropout(drop)(x)
-        x = Dense(50, activation='relu')(x)
-        x = Dropout(drop)(x)
-        out = Dense(4, activation='softmax')(x)
-        return out '''
-
-
-''' conv_0_title = Conv2D(num_filters, (filter_sizes[0], EMBEDDING_DIM),activation='relu',kernel_regularizer=regularizers.l2(0.01))(reshape_title)
-        conv_1_title = Conv2D(num_filters, (filter_sizes[1], EMBEDDING_DIM),activation='relu',kernel_regularizer=regularizers.l2(0.01))(reshape_title)
-        conv_2_title = Conv2D(num_filters, (filter_sizes[2], EMBEDDING_DIM),activation='relu',kernel_regularizer=regularizers.l2(0.01))(reshape_title)
-
-        maxpool_0_title = MaxPooling2D((sequence_length_title - filter_sizes[0] + 1, 1), strides=(1,1))(conv_0_title)
-        maxpool_1_title = MaxPooling2D((sequence_length_title - filter_sizes[1] + 1, 1), strides=(1,1))(conv_1_title)
-        maxpool_2_title = MaxPooling2D((sequence_length_title - filter_sizes[2] + 1, 1), strides=(1,1))(conv_2_title) '''
-
-
-
+model = Model(inputs=[inputs_title,inputs_text], outputs=output)
 
 
 
