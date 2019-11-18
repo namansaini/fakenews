@@ -152,7 +152,8 @@ embedding_layer=create_embedding_layer()
 inputs_title = Input(shape=(sequence_length_title,))
 embedding_title = embedding_layer(inputs_title)
 reshape_title = Reshape((sequence_length_title, EMBEDDING_DIM, 1))(embedding_title)
-
+print(embedding_title.shape)
+print(reshape_title.shape)
 
 conv_0_title = Conv2D(num_filters, (filter_sizes[0], EMBEDDING_DIM), activation='relu',
                       kernel_regularizer=regularizers.l2(0.01))(reshape_title)
