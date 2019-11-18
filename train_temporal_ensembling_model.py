@@ -95,6 +95,16 @@ def create_embedding_layer():
     # print('Found %s unique tokens.' % len(word_index))
 
 
+def  change_input(input):
+    sequences_train_text = tokenizer.texts_to_sequences(input.text)
+    # sequences_valid_text = tokenizer.texts_to_sequences(val_data.text)
+    sequences_train_title = tokenizer.texts_to_sequences(input.title)
+    # sequences_valid_title = tokenizer.texts_to_sequences(val_data.title)
+
+    text = pad_sequences(sequences_train_text)
+    # X_val_text = pad_sequences(sequences_valid_text, maxlen=X_train_text.shape[1])
+    title = pad_sequences(sequences_train_title)
+    return [title,text]
 
 
 
