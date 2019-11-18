@@ -65,20 +65,16 @@ NUM_WORDS=20000
 tokenizer = Tokenizer(num_words=NUM_WORDS, filters='!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n\'', lower=True)
 
 
-def create_embedding_layer():
-    tokenizer.fit_on_texts(train_data.text)
-    tokenizer.fit_on_texts(val_data.text)
 
-    tokenizer.fit_on_texts(train_data.title)
-    tokenizer.fit_on_texts(val_data.title)
-
-    word_index = tokenizer.word_index
-    word_vectors = KeyedVectors.load_word2vec_format('GoogleNews-vectors-negative300.bin', binary=True)
-
-
-    vocabulary_size = min(len(word_index) + 1, NUM_WORDS)
-    embedding_matrix = np.zeros((vocabulary_size, EMBEDDING_DIM))
-    for word, i in word_index.items():
+tokenizer.fit_on_texts(train_data.text)
+tokenizer.fit_on_texts(val_data.text)
+tokenizer.fit_on_texts(train_data.title)
+tokenizer.fit_on_texts(val_data.title)
+word_index = tokenizer.word_index
+word_vectors = KeyedVectors.load_word2vec_format('GoogleNews-vectors-negative300.bin', binary=True)
+vocabulary_size = min(len(word_index) + 1, NUM_WORDS)
+embedding_matrix = np.zeros((vocabulary_size, EMBEDDING_DIM))
+for word, i in word_index.items():
         if i >= NUM_WORDS:
             continue
         try:
@@ -87,9 +83,9 @@ def create_embedding_layer():
         except KeyError:
             embedding_matrix[i] = np.random.normal(0, np.sqrt(0.25), EMBEDDING_DIM)
 
-    del (word_vectors)
-    embedding = Embedding(vocabulary_size, EMBEDDING_DIM, weights=[embedding_matrix], trainable=True)
-    return embedding
+del (word_vectors)
+embedding_layer = Embedding(vocabulary_size, EMBEDDING_DIM, weights=[embedding_matrix], trainable=True)
+
 
     # print('Found %s unique tokens.' % len(word_index))
 
@@ -134,6 +130,8 @@ num_filters = 100
 drop = 0.2
 
 # prepare embedding layer
+print(sequence_length_title)
+print(sequence_length_text)
 
 
 from tensorflow.keras.layers import Dense, Input, GlobalMaxPooling1D
@@ -147,7 +145,7 @@ from tensorflow.keras.models import Model
 from tensorflow.keras import regularizers
 
 
-embedding_layer=create_embedding_layer()
+
 
 inputs_title = Input(shape=(sequence_length_title,))
 embedding_title = embedding_layer(inputs_title)
