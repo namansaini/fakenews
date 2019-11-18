@@ -155,11 +155,11 @@ reshape_title = Reshape((sequence_length_title, EMBEDDING_DIM, 1))(embedding_tit
 
 
 conv_0_title = Conv2D(num_filters, (filter_sizes[0], EMBEDDING_DIM), activation='relu',
-                      kernel_regularizer=regularizers.l2(0.01))(reshape_title)
+                      kernel_regularizer=regularizers.l2(0.01), data_format='channels_first')(reshape_title)
 conv_1_title = Conv2D(num_filters, (filter_sizes[1], EMBEDDING_DIM), activation='relu',
-                      kernel_regularizer=regularizers.l2(0.01))(reshape_title)
+                      kernel_regularizer=regularizers.l2(0.01), data_format='channels_first')(reshape_title)
 conv_2_title = Conv2D(num_filters, (filter_sizes[2], EMBEDDING_DIM), activation='relu',
-                      kernel_regularizer=regularizers.l2(0.01))(reshape_title)
+                      kernel_regularizer=regularizers.l2(0.01), data_format='channels_first')(reshape_title)
 
 maxpool_0_title = MaxPooling2D((sequence_length_title - filter_sizes[0] + 1, 1), strides=(1, 1))(conv_0_title)
 maxpool_1_title = MaxPooling2D((sequence_length_title - filter_sizes[1] + 1, 1), strides=(1, 1))(conv_1_title)
