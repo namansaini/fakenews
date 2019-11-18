@@ -149,11 +149,8 @@ from tensorflow.keras import regularizers
 
 
 inputs_title = Input(shape=(sequence_length_title,))
-print(tf.shape(inputs_title))
 embedding_title = embedding_layer(inputs_title)
 reshape_title = Reshape((sequence_length_title, EMBEDDING_DIM, 1))(embedding_title)
-print(tf.shape(embedding_title))
-print(tf.shape(reshape_title))
 
 conv_0_title = Conv2D(num_filters, (filter_sizes[0], EMBEDDING_DIM), activation='relu',
                       kernel_regularizer=regularizers.l2(0.01))(reshape_title)
