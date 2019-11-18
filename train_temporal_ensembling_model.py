@@ -458,7 +458,7 @@ def mains():
             checkpoint.save(file_prefix=checkpoint_directory)
 
         # Record summaries
-        with tf.compat.v1.contrib.summary.record_summaries_every_n_global_steps(1):
+        with tf.summary.record_if(True):
             tf.summary.scalar('Train Loss', epoch_loss_avg.result())
             tf.summary.scalar(
                 'Train Accuracy', epoch_accuracy.result())
