@@ -20,8 +20,8 @@ data=pd.read_csv("all_data.csv", usecols=['author','main_img_url','site_url','te
 data=data.dropna()
 
 test_data=data.sample(frac=0.3,random_state=20)
+train_data=data.drop(test_data.index)
 
-NUM_TRAIN_SAMPLES = train_data.shape[0]
 NUM_TEST_SAMPLES = test_data.shape[0]
 
 def encode_label(column):
