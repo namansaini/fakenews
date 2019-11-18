@@ -434,8 +434,7 @@ def mains():
                     #X_val, y_val, _ = validation_iterator.get_next()
                     y_val_predictions = model(change_input(X_val), training=False)
 
-                    epoch_loss_avg_val(tf.losses.softmax_cross_entropy(
-                        y_val, y_val_predictions))
+                    epoch_loss_avg_val(tf.compat.v1.losses.softmax_cross_entropy(y_val, y_val_predictions))
                     epoch_accuracy_val(
                         tf.argmax(y_val_predictions, 1), tf.argmax(y_val, 1))
 
@@ -453,13 +452,13 @@ def mains():
         # If the accuracy of validation improves save a checkpoint
         if best_val_accuracy < epoch_accuracy_val.result():
             best_val_accuracy = epoch_accuracy_val.result()
-            checkpoint = tf.Checkpoint(optimizer=optimizer,
+            checkpoint = tf.train.Checkpoint(optimizer=optimizer,
                                         model=model,
                                         optimizer_step=global_step)
             checkpoint.save(file_prefix=checkpoint_directory)
 
         # Record summaries
-        with tf.summary.record_summaries_every_n_global_steps(1):
+        with tf.contrib.summary.record_summaries_every_n_global_steps(1):
             tf.summary.scalar('Train Loss', epoch_loss_avg.result())
             tf.summary.scalar(
                 'Train Accuracy', epoch_accuracy.result())
