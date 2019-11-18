@@ -142,7 +142,6 @@ from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.models import Model
 from tensorflow.keras import regularizers
-from tensorflow.keras.layers import LeakyReLU
 
 
 
@@ -151,11 +150,11 @@ inputs_title = Input(shape=(sequence_length_title,))
 embedding_title = embedding_layer(inputs_title)
 reshape_title = Reshape((sequence_length_title, EMBEDDING_DIM, 1))(embedding_title)
 
-conv_0_title = Conv2D(num_filters, (filter_sizes[0], EMBEDDING_DIM), activation=LeakyReLU(alpha=0.6),
+conv_0_title = Conv2D(num_filters, (filter_sizes[0], EMBEDDING_DIM), activation='relu',
                       kernel_regularizer=regularizers.l2(0.01))(reshape_title)
-conv_1_title = Conv2D(num_filters, (filter_sizes[1], EMBEDDING_DIM), activation=LeakyReLU(alpha=0.6),
+conv_1_title = Conv2D(num_filters, (filter_sizes[1], EMBEDDING_DIM), activation='relu',
                       kernel_regularizer=regularizers.l2(0.01))(reshape_title)
-conv_2_title = Conv2D(num_filters, (filter_sizes[2], EMBEDDING_DIM), activation=LeakyReLU(alpha=0.6),
+conv_2_title = Conv2D(num_filters, (filter_sizes[2], EMBEDDING_DIM), activation='relu',
                       kernel_regularizer=regularizers.l2(0.01))(reshape_title)
 print("convolution success")
 maxpool_0_title = MaxPooling2D((sequence_length_title - filter_sizes[0] + 1, 1), strides=(1, 1))(conv_0_title)
@@ -174,11 +173,11 @@ reshape_text = Reshape((sequence_length_text, EMBEDDING_DIM, 1))(embedding_text)
 
 
 
-conv_0_text = Conv2D(num_filters, (filter_sizes[0], EMBEDDING_DIM), activation=LeakyReLU(alpha=0.6),
+conv_0_text = Conv2D(num_filters, (filter_sizes[0], EMBEDDING_DIM), activation='relu',
                      kernel_regularizer=regularizers.l2(0.01))(reshape_text)
-conv_1_text = Conv2D(num_filters, (filter_sizes[1], EMBEDDING_DIM), activation=LeakyReLU(alpha=0.6),
+conv_1_text = Conv2D(num_filters, (filter_sizes[1], EMBEDDING_DIM), activation='relu',
                      kernel_regularizer=regularizers.l2(0.01))(reshape_text)
-conv_2_text = Conv2D(num_filters, (filter_sizes[2], EMBEDDING_DIM), activation=LeakyReLU(alpha=0.6),
+conv_2_text = Conv2D(num_filters, (filter_sizes[2], EMBEDDING_DIM), activation='relu',
                      kernel_regularizer=regularizers.l2(0.01))(reshape_text)
 
 maxpool_0_text = MaxPooling2D((sequence_length_text - filter_sizes[0] + 1, 1), strides=(1, 1))(conv_0_text)
@@ -291,7 +290,6 @@ def ramp_down_function(epoch, num_epochs):
 
 """
 Created on Thu Nov 14 12:07:05 2019
-
 """
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
